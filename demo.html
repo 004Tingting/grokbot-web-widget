@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light">
+<title>GrokBot Web Widget 演示</title>
+<style>
+  html { color-scheme: light; }
+  body { margin: 0 auto; max-width: 880px; padding: 32px 20px 120px; background: #fff;
+         font: 16px/1.75 system-ui, "Microsoft YaHei", sans-serif; color: #222; }
+  h1 { font-size: 26px; }
+  h2 { font-size: 19px; margin-top: 40px; }
+  .shapes { display: flex; flex-wrap: wrap; gap: 18px; align-items: flex-end; }
+  .card { background: #f6f7f9; border-radius: 12px; padding: 14px 18px; margin: 14px 0; }
+  .dark { background: #17181c; color: #eee; border-radius: 12px; padding: 14px 18px; margin: 14px 0; }
+  button { font: inherit; padding: 6px 14px; margin: 2px 6px 2px 0; border-radius: 8px;
+           border: 1px solid #bbb; background: #fff; cursor: pointer; }
+  button:hover { background: #eef2ff; }
+  #states button.on { background: #5b7fe5; color: #fff; border-color: #5b7fe5; }
+  #perf { font: 13px/1.6 ui-monospace, Consolas, monospace; color: #555; }
+  var { font-style: normal; color: #5b7fe5; font-weight: 600; }
+</style>
+</head>
+<body>
+<h1>GrokBot Web Widget 演示页</h1>
+<p>这是一个模拟的宿主页面。页面里的每个头像都是 <code>&lt;grok-bot&gt;</code> 自定义元素：
+<strong>眼睛每 2 秒采样一次鼠标位置</strong>并平滑转向（非逐帧跟随），叠加稀疏微眼跳；
+内置 25 个表情、39 种状态，状态决定表情池、换表情节奏与眨眼档位；左下角还有一个
+<code>data-float</code> 自动挂载的黑色悬浮球。空闲（鼠标不动、无动画）时插件完全停止渲染。</p>
+
+<h2>基础（状态切换看这里）</h2>
+<div class="card">
+  <grok-bot id="main" size="160" auto-expression></grok-bot>
+  <p style="margin:10px 0 0">默认 blob 形态 · idle 状态 · 点击它可按序列手动换表情。</p>
+</div>
+
+<h2>形态（18 种中的 8 种）</h2>
+<div class="shapes">
+  <grok-bot size="88" shape="pebble"></grok-bot>
+  <grok-bot size="88" shape="bean"></grok-bot>
+  <grok-bot size="88" shape="capsule"></grok-bot>
+  <grok-bot size="88" shape="hex"></grok-bot>
+  <grok-bot size="88" shape="gem"></grok-bot>
+  <grok-bot size="88" shape="dome"></grok-bot>
+  <grok-bot size="88" shape="teardrop"></grok-bot>
+  <grok-bot size="88" shape="leaf"></grok-bot>
+</div>
+
+<h2>主题与表情锁定</h2>
+<div class="dark">
+  <grok-bot size="110" theme="dark" expression="joyful-wide"></grok-bot>
+  <grok-bot size="110" theme="dark" expression="playful-right"></grok-bot>
+  <grok-bot size="110" theme="dark" expression="sleepy-squint"></grok-bot>
+  <span style="margin-left:12px">深色主题 + 表情锁定（joyful-wide / playful-right / sleepy-squint）</span>
+</div>
+
+<h2>控制台</h2>
+<div class="card">
+  <p style="margin:0 0 8px">状态（作用于上方主头像，切换后表情池/节奏/眨眼档位随之改变）：</p>
+  <div id="states">
+    <button data-state="idle" class="on">idle</button>
+    <button data-state="thinking">thinking</button>
+    <button data-state="listening">listening</button>
+    <button data-state="happy">happy</button>
+    <button data-state="excited">excited</button>
+    <button data-state="curious">curious</button>
+    <button data-state="searching">searching</button>
+    <button data-state="sleeping">sleeping</button>
+    <button data-state="sad">sad</button>
+    <button data-state="angry">angry</button>
+    <button data-state="bored">bored</button>
+    <button data-state="celebrate">celebrate</button>
+  </div>
+  <button id="bBlink">眨一下眼</button>
+  <button id="bTrack">视线跟随：开/关</button>
+  <button id="bAmbient">微眼跳：开/关</button>
+  <button id="bRemove">移除悬浮球（验证清理）</button>
+  <button id="bRemount">重新挂载悬浮球</button>
+</div>
+
+<h2>性能自检</h2>
+<div id="perf">采集中……</div>
+
+<!-- 嵌入方式 1：script 标签 + data-float（左下角黑色悬浮球） -->
+<script src="dist/grokbot.js?v=11" data-float data-left="20" data-bottom="20" data-body="#000000"></script>
+<script>
+(() => {
+  const main = document.getElementById('main');
+  const perf = [];
+  const put = (k, v) => { perf[k] = v; render(); };
+  function render() {
+    document.getElementById('perf').innerHTML = Object.entries(perf)
+      .map(([k, v]) => k + '：<var>' + v + '</var>').join('<br>');
+  }
+
+  // 长任务监控（>50ms 记一次）
+  let longtasks = 0;
+  try {
+    new PerformanceObserver((list) => {
+      longtasks += list.getEntries().length;
+      put('长任务（>50ms）次数', longtasks);
+    }).observe({ entryTypes: ['longtask'] });
+  } catch (e) { put('长任务监控', '浏览器不支持'); }
+
+  // 脚本资源耗时
+  addEventListener('load', () => {
+    const res = performance.getEntriesByType('resource')
+      .find((e) => e.name.includes('grokbot.js'));
+    if (res) put('脚本加载+执行耗时', res.duration.toFixed(1) + ' ms');
+    setTimeout(() => put('首帧绘制', '已完成（浏览器主线程无阻塞）'), 100);
+  });
+
+  // 状态切换
+  const stateBox = document.getElementById('states');
+  stateBox.addEventListener('click', (e) => {
+    const btn = e.target.closest('button[data-state]');
+    if (!btn) return;
+    main.setAttribute('state', btn.dataset.state);
+    stateBox.querySelectorAll('button').forEach((b) =>
+      b.classList.toggle('on', b === btn));
+  });
+
+  document.getElementById('bBlink').onclick = () => main.blink();
+  document.getElementById('bTrack').onclick = () => {
+    const off = main.getAttribute('tracking') === 'off';
+    main.setAttribute('tracking', off ? 'on' : 'off');
+  };
+  document.getElementById('bAmbient').onclick = () => {
+    const off = main.getAttribute('ambient') === 'off';
+    main.setAttribute('ambient', off ? 'on' : 'off');
+  };
+  let floater = window.__Widgets && document.querySelector('body > grok-bot[style]');
+  document.getElementById('bRemove').onclick = () => {
+    if (floater) { floater.remove(); floater = null; }
+  };
+  document.getElementById('bRemount').onclick = () => {
+    if (!floater) floater = window.__Widgets.grokbot.mount({
+      autoExpression: true, size: 120, left: 20, bottom: 20, bodyColor: '#000000',
+    });
+  };
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<!-- Build-time tool: render all 25 GrokBot expressions for visual selection. -->
+<html lang="zh">
+<head>
+<meta charset="utf-8">
+<title>GrokBot 表情对比页（构建工具）</title>
+<style>
+  body { margin: 16px; font: 12px system-ui; background: #f5f5f7; }
+  .grid { display: grid; grid-template-columns: repeat(7, 116px); gap: 10px; }
+  figure { margin: 0; text-align: center; background: #fff; border-radius: 10px; padding: 6px 0 4px; }
+  figcaption { color: #444; }
+</style>
+</head>
+<body>
+<div class="grid" id="grid"></div>
+<script>
+fetch('expressions.json').then(r => r.json()).then(exprs => {
+  const grid = document.getElementById('grid');
+  const FC = 114.2705, W = 210;
+  exprs.forEach((eyes, idx) => {
+    const fig = document.createElement('figure');
+    const cv = document.createElement('canvas');
+    cv.width = 100; cv.height = 100;
+    const ctx = cv.getContext('2d');
+    const s = 100 / 259;
+    ctx.setTransform(s, 0, 0, s, 0, 0);
+    // blob body: rounded rect 210x210 at face center, radius 50%
+    ctx.fillStyle = '#1d1d1f';
+    ctx.beginPath();
+    const l = FC - W / 2, t = FC - W / 2, r = W / 2;
+    ctx.roundRect(l, t, W, W, r);
+    ctx.fill();
+    // eyes
+    ctx.fillStyle = '#fff';
+    for (const ring of eyes) {
+      ctx.beginPath();
+      ring.forEach(([x, y], i) => i ? ctx.lineTo(x, y) : ctx.moveTo(x, y));
+      ctx.closePath();
+      ctx.fill();
+    }
+    fig.appendChild(cv);
+    const cap = document.createElement('figcaption');
+    cap.textContent = 'expression' + String(idx).padStart(2, '0');
+    fig.appendChild(cap);
+    grid.appendChild(fig);
+  });
+});
+</script>
+</body>
+</html>

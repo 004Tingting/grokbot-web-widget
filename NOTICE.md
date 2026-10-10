@@ -4,7 +4,9 @@
 
 ## 1. grokbot_widget（Flutter，BSD 3-Clause）
 
-- 来源：GrokBot-master（Copyright (c) 2026, nasawz，BSD 3-Clause License）
+- 来源：[nasawz/GrokBot](https://github.com/nasawz/GrokBot)
+  （Copyright (c) 2026, nasawz，BSD 3-Clause License，随仓库附于
+  `licenses/grokbot_widget-BSD-3-Clause.txt`）
 - 本仓库使用的内容：身体/面部几何常量（viewbox 259、face center 114.2705 等）、
   25 个表情的 48 点闭合环坐标数据（`tools/expressions.json`，由其
   `lib/src/data/expression_data.dart` 提取）、18 种形态的面部校正参数、

@@ -755,7 +755,7 @@
 
   const NS = (window.__Widgets = window.__Widgets || {});
   if (!NS.grokbot) {
-    NS.grokbot = { mount, version: '1.0.0' };
+    NS.grokbot = { mount, version: '1.1.0' };
   }
 
   /* 脚本标签带 data-float 时自动挂载悬浮球（默认右下角 20px；
